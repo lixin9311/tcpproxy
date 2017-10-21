@@ -39,6 +39,7 @@ fancy.backend 2.3.4.5:443 PROXY
 
 # Now there can be variables in config
 # lucus.d1.tyd.us -> internal.nakagawa.lucus:443
+# But remember, acme challenge will not work if this feature is used
 /(?P<name>.*)\.d1\.tyd\.us/ /internal.nakagawa.${name}:443/
 
 # Yes, there is also anonymous variable, but be careful with the brackets

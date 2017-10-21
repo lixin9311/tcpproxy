@@ -67,6 +67,10 @@ func tryAcme(ctx context.Context, ch chan string, backend, hostname string) {
 	var err error
 	defer func() { ch <- res }()
 
+	if len(backend) >= 2 && backend[0] == '/' && backend[len(backend)-1] == '/' {
+		return
+	}
+
 	dialer := net.Dialer{Timeout: 10 * time.Second}
 	conn, err := dialer.DialContext(ctx, "tcp", backend)
 	if err != nil {
