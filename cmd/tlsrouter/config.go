@@ -40,6 +40,14 @@ type Config struct {
 	acme   *ACME
 }
 
+func compile(hostname string, match *regexp.Regexp, backend string) string {
+	re := match.Copy()
+	dst := make([]byte, 0, 1024)
+	matches := re.FindStringSubmatchIndex(hostname)
+	out := re.ExpandString(dst, backend, hostname, matches)
+	return string(out)
+}
+
 func dnsRegex(s string) (*regexp.Regexp, error) {
 	if len(s) >= 2 && s[0] == '/' && s[len(s)-1] == '/' {
 		return regexp.Compile(s[1 : len(s)-1])
@@ -70,6 +78,10 @@ func (c *Config) Match(hostname string) (string, bool) {
 
 	for _, r := range c.routes {
 		if r.match.MatchString(hostname) {
+			backend := r.backend
+			if len(backend) >= 2 && backend[0] == '/' && backend[len(backend)-1] == '/' {
+				return compile(hostname, r.match, backend[1:len(backend)-1]), r.proxyInfo
+			}
 			return r.backend, r.proxyInfo
 		}
 	}

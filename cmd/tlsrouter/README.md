@@ -36,6 +36,20 @@ google.* 10.20.30.40:443
 # it to receive the real client ip:port.
 
 fancy.backend 2.3.4.5:443 PROXY
+
+# Now there can be variables in config
+# lucus.d1.tyd.us -> internal.nakagawa.lucus:443
+/(?P<name>.*)\.d1\.tyd\.us/ /internal.nakagawa.${name}:443/
+
+# Yes, there is also anonymous variable, but be careful with the brackets
+# lucus.d2.tyd.us -> lucus.internal.nakagawa:443
+/(.*)\.d2\.tyd\.us/ /$1.internal.nakagawa:443/
+# lucus.d3.tyd.us -> lucus.internal.nakagawa:443
+/((.*)\.d3\.tyd\.us)/ /$2.internal.nakagawa:443/
+
+# Therefore, you can do some intersting things
+# 443.lucus.d4.tyd.us -> internal.nakagawa.lucus:443
+/(?P<port>^[0-9]{1,4})\.(?P<host>.*)\.d4\.tyd\.us/ /internal.nakagawa.${host}:${port}/
 ```
 
 TLSRouter takes one mandatory commandline argument, the configuration file to use:

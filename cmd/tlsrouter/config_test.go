@@ -24,6 +24,12 @@ go.universe.tf 1.2.3.4
 google.* 3.4.5.6
 /gooo+gle\.com/ 4.5.6.7
 foobar.net 6.7.8.9 PROXY
+
+/(.*)\.d1\.tyd\.us/ /$1.internal.nakagawa/
+/(?P<name>.*)\.d2\.tyd\.us/ /internal.nakagawa.${name}/
+/(?P<first>.*)\.(?P<second>.*)\.(?P<third>.*)\.nakagawa/ /nakagawa.${third}.${second}.${first}/
+/((.*)\.d3\.tyd\.us)/ /$2.internal.nakagawa/
+/(?P<port>^[0-9]{1,4})\.(?P<host>.*)\.d4\.tyd\.us/ /internal.nakagawa.${host}:${port}/
 `,
 			Tests: map[string]result{
 				"go.universe.tf":     result{"1.2.3.4", false},
@@ -38,6 +44,12 @@ foobar.net 6.7.8.9 PROXY
 				"google.com.br":       result{"", false},
 				"foo.bar.universe.tf": result{"", false},
 				"goooooglexcom":       result{"", false},
+
+				"lucus.d1.tyd.us":     result{"lucus.internal.nakagawa", false},
+				"lucus.d2.tyd.us":     result{"internal.nakagawa.lucus", false},
+				"1.2.3.nakagawa":      result{"nakagawa.3.2.1", false},
+				"lucus.d3.tyd.us":     result{"lucus.internal.nakagawa", false},
+				"443.lucus.d4.tyd.us": result{"internal.nakagawa.lucus:443", false},
 			},
 		},
 	}
