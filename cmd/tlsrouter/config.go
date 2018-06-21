@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -78,11 +79,17 @@ func (c *Config) Match(hostname string) (string, bool) {
 
 	for _, r := range c.routes {
 		if r.match.MatchString(hostname) {
+			if *debug {
+				log.Println("Successed match: ", r.match.String())
+			}
 			backend := r.backend
 			if len(backend) >= 2 && backend[0] == '/' && backend[len(backend)-1] == '/' {
 				return compile(hostname, r.match, backend[1:len(backend)-1]), r.proxyInfo
 			}
 			return r.backend, r.proxyInfo
+		}
+		if *debug {
+			log.Println("Failed match: ", r.match.String())
 		}
 	}
 	return "", false
@@ -138,6 +145,11 @@ func (c *Config) Read(r io.Reader) error {
 	c.acme = &ACME{
 		backends: backends,
 		cache:    make(map[string]acmeCacheEntry),
+	}
+	if *debug {
+		for _, v := range routes {
+			log.Println("match: ", (v.match).String(), "backend: ", v.backend)
+		}
 	}
 	return nil
 }

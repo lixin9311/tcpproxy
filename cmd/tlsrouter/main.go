@@ -23,20 +23,28 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/radovskyb/watcher"
 )
 
 var (
 	cfgFile      = flag.String("conf", "", "configuration file")
 	listen       = flag.String("listen", ":443", "listening port")
 	helloTimeout = flag.Duration("hello-timeout", 3*time.Second, "how long to wait for the TLS ClientHello")
+	debug        = flag.Bool("debug", false, "Debug mode")
+	watchconfig  = flag.Bool("u", true, "Watch for the change of the config file and auto-update the rules")
 )
 
 func main() {
 	flag.Parse()
-
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	p := &Proxy{}
 	if err := p.Config.ReadFile(*cfgFile); err != nil {
 		log.Fatalf("Failed to read config %q: %s", *cfgFile, err)
+	}
+
+	if *watchconfig {
+		go p.watchForConfigChanges(*cfgFile)
 	}
 
 	log.Fatalf("%s", p.ListenAndServe(*listen))
@@ -61,6 +69,44 @@ func (p *Proxy) Serve(l net.Listener) error {
 			config:  &p.Config,
 		}
 		go conn.proxy()
+	}
+}
+
+func (p *Proxy) watchForConfigChanges(configFile string) {
+	watch := watcher.New()
+	// notify write events.
+	watch.FilterOps(watcher.Write)
+
+	go func() {
+		for {
+			select {
+			case <-watch.Event:
+				if *debug {
+					log.Println("Got new config file!")
+				}
+				if err := p.Config.ReadFile(configFile); err != nil {
+					log.Printf("Failed to update config: %v\n", err)
+				} else {
+					if *debug {
+						log.Println("Config updated!")
+					}
+				}
+			case err := <-watch.Error:
+				log.Fatalln(err)
+			case <-watch.Closed:
+				return
+			}
+		}
+	}()
+
+	// Watch config file for changes.
+	if err := watch.Add(configFile); err != nil {
+		log.Fatalln(err)
+	}
+
+	// Start the watching process - it'll check for changes every 100ms.
+	if err := watch.Start(time.Millisecond * 100); err != nil {
+		log.Fatalln(err)
 	}
 }
 
